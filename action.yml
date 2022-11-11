@@ -1,0 +1,38 @@
+name: cloudflare-pages
+description: Build with hugo and publish to cloudflare pages
+inputs:
+  apiToken:
+    description: Cloudflare API Token
+    required: true
+    default: false
+  accountID:
+    description: Cloudflare Account ID
+    required: true
+    default: false
+  projectName:
+    description: Project Name for Cloudflare Pages
+    required: true
+    default: false
+
+runs:
+  using: composite
+  steps:
+    - name: Check platform
+      shell: bash
+      run: if [[ "${{ runner.os }}" != "Linux" ]]; then echo "::error::Unsupported platform - ${{ runner.os }}"; exit 1; fi
+    - name: Setup and build with Hugo
+      uses: heinokesoe/actions@hugo
+      with:
+        parameters: --minify
+    - uses: actions/setup-node@v3
+    - name: Install Wrangler and publish to cloudflare pages
+      shell: bash
+      if: inputs.apiToken != false && inputs.accountID != false && inputs.projectName != false
+      run: |
+        npm install -g wrangler
+        CLOUDFLARE_API_TOKEN=$api CLOUDFLARE_ACCOUNT_ID=$id npx wrangler pages project create $name --production-branch main || true
+        CLOUDFLARE_API_TOKEN=$api CLOUDFLARE_ACCOUNT_ID=$id npx wrangler pages publish ./public --project-name=$name --commit-dirty=true
+      env:
+        api: ${{ inputs.apiToken }}
+        id: ${{ inputs.accountID }}
+        name: ${{ inputs.projectName }}
