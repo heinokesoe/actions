@@ -1,0 +1,23 @@
+name: setup-lxd
+description: setup LXD on GitHub Runner in Ubuntu
+
+runs:
+  using: composite
+  steps:
+    - name: Check platform
+      shell: bash
+      run: if [[ "${{ runner.os }}" != "Linux" ]]; then echo "::error::Unsupported platform - ${{ runner.os }}"; exit 1; fi
+    - name: initalize LXD
+      shell: bash
+      run: |
+        sudo iptables -P INPUT ACCEPT
+        sudo iptables -P FORWARD ACCEPT
+        sudo iptables -P OUTPUT ACCEPT
+        sudo iptables -t nat -F
+        sudo iptables -t mangle -F
+        sudo iptables -t raw -F
+        sudo iptables -t security -F
+        sudo iptables -F
+        sudo iptables -X
+        sudo chmod o+g $([ ${ImageOS#ubuntu} -ge 20 ] && echo '/var/snap/lxd/common/lxd/unix.socket' || echo '/var/lib/lxd/unix.socket' )
+        lxd init --auto
