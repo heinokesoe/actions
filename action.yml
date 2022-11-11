@@ -1,0 +1,30 @@
+name: setup-hugo
+description: setup Hugo on GitHub Runner in Ubuntu
+inputs:
+  parameter:
+    description: Parameters for hugo command
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Check platform
+      shell: bash
+      run: if [[ "${{ runner.os }}" != "Linux" ]]; then echo "::error::Unsupported platform - ${{ runner.os }}"; exit 1; fi
+    - name: Download Hugo
+      shell: bash
+      working-directory: ${{ runner.temp }}
+      run: |
+        version=$(curl -s $GITHUB_API_URL/repos/gohugoio/hugo/releases/latest | jq -r .tag_name)
+        echo ::group::Downloading Hugo $version
+        aria2c -x 16 $GITHUB_SERVER_URL/gohugoio/hugo/releases/download/$version/hugo_extended_${version:1}_linux-amd64.tar.gz
+        mkdir -p hugo
+        tar xzf hugo_extended_${version:1}_linux-amd64.tar.gz -C hugo
+        rm hugo_extended_${version:1}_linux-amd64.tar.gz
+        echo ::endgroup::
+    - name: Install Hugo on tool cache
+      uses: heinokesoe/actions@tool-cache
+      with:
+        folder_name: hugo
+    - name: Build
+      shell: bash
+      run: hugo ${{ inputs.parameter }}
